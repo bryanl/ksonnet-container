@@ -1,6 +1,14 @@
 local k = import "k.libsonnet";
 
 {
+    // nodeAffinity creates a node affinity or anti-affinity
+    //
+    // * @param key The label key this affinity applies to
+    // * @param values An array of string values
+    // * @param operator Represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.
+    // * @param weight Weight for this affinity in the range 1-100.
+    // * @param required If required is true, an anti-affinity will be created.
+    // * @param base object his item will be applied to.
     nodeAffinity(key, values, operator="In", weight=1, required=false, base=k.apps.v1beta2.deployment)::
         if required
             then hidden.requiredNodeAffinity(key, values, operator, base)
@@ -10,7 +18,6 @@ local k = import "k.libsonnet";
         local affinity = k.apps[version].deployment.mixin.spec.template.spec.affinity;
 
         {},
-
 
     local hidden = {
         affinity(base):: base.mixin.spec.template.spec.affinity,
