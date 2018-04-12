@@ -7,13 +7,22 @@ local k = import "k.libsonnet";
     // * @param values An array of string values
     // * @param operator Represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.
     // * @param weight Weight for this affinity in the range 1-100.
-    // * @param required If required is true, an anti-affinity will be created.
+    // * @param required If required is true, pods will not be scheduled if there is not a match.
     // * @param base object his item will be applied to.
     nodeAffinity(key, values, operator="In", weight=1, required=false, base=k.apps.v1beta2.deployment)::
         if required
             then hidden.requiredNodeAffinity(key, values, operator, base)
             else hidden.preferredNodeAffinity(key, values, weight, operator, base),
 
+    // nodeAffinity creates a pod affinity or anti-affinity
+    //
+    // * @param key The label key this affinity applies to
+    // * @param values An array of string values
+    // * @param operator Represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.
+    // * @param weight Weight for this affinity in the range 1-100.
+    // * @param required If required is true, pods will not be scheduled if there is not a match.
+    // * @param anti If anti is true, an anti-affinity will be created.
+    // * @param base object his item will be applied to.
     podAffinity(key, values, topology, anti=false, ns=null, required=false, operator="In", weight=1, required=false, base=k.apps.v1beta2.deployment)::
         if required
             then hidden.requiredPodAffinity(key, values, topology, ns, operator, base, anti)
