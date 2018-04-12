@@ -1,0 +1,7 @@
+apiVersion: 0.0.1
+kind: ksonnet.io/parts
+name: affinity
+description: >
+  Provides tools to help with managing node affinity/anti-affinity
+author: Bryan Liles <bryan@heptio.io>
+license: Apache 2.0
