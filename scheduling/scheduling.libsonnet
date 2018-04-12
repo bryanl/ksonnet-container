@@ -14,8 +14,10 @@ local k = import "k.libsonnet";
             then hidden.requiredNodeAffinity(key, values, operator, base)
             else hidden.preferredNodeAffinity(key, values, weight, operator, base),
 
-    podAffinity(key, values, topology, ns=null, required=false, operator="In", weight=1, required=false, base=k.apps.v1beta2.deployment)::
-        hidden.preferredPodAffinity(key, values, topology, weight, ns, operator, base),
+    podAffinity(key, values, topology, anti=false, ns=null, required=false, operator="In", weight=1, required=false, base=k.apps.v1beta2.deployment)::
+        if required
+            then hidden.requiredPodAffinity(key, values, topology, ns, operator, base, anti)
+            else hidden.preferredPodAffinity(key, values, topology, weight, ns, operator, base, anti),
 
     local hidden = {
         affinity(base):: base.mixin.spec.template.spec.affinity,
@@ -39,8 +41,11 @@ local k = import "k.libsonnet";
 
             self.affinity(base).nodeAffinity.mixinInstance(preference),
 
-        preferredPodAffinity(key, values, topology, weight, ns, operator, base)::
-            local affinity = self.affinity(base).podAffinity;
+        preferredPodAffinity(key, values, topology, weight, ns, operator, base, anti)::
+            local affinity = if anti
+                then self.affinity(base).podAntiAffinity
+                else self.affinity(base).podAffinity;
+
             local affinityType = self.affinity(base).podAffinityType;
             local termType = affinityType.preferredDuringSchedulingIgnoredDuringExecutionType;
             local labelSelectorType = termType.mixin.podAffinityTerm.labelSelectorType;
@@ -53,6 +58,23 @@ local k = import "k.libsonnet";
                 + if ns != null then termType.mixin.podAffinityTerm.withNamespaces(ns) else {};
 
             affinity.withPreferredDuringSchedulingIgnoredDuringExecutionMixin(weightedTerm),
+
+        requiredPodAffinity(key, values, topology, ns, operator, base, anti)::
+            local affinity = if anti
+                then self.affinity(base).podAntiAffinity
+                else self.affinity(base).podAffinity;
+
+            local affinityType = self.affinity(base).podAffinityType;
+            local termType = affinityType.requiredDuringSchedulingIgnoredDuringExecutionType;
+            local labelSelectorType = termType.mixin.labelSelectorType;
+            local matchExpression = self.withMatchExpression(key, values, operator, labelSelectorType);
+            local labelSelector = termType.mixin.podAffinityTerm.labelSelector.mixinInstance(matchExpression);
+
+            local term = termType.withTopologyKey(topology)
+                + termType.mixin.labelSelector.mixinInstance(matchExpression)
+                + if ns != null then termType.withNamespaces(ns) else {};
+
+            affinity.withRequiredDuringSchedulingIgnoredDuringExecutionMixin(term),
 
         requiredNodeAffinity(key, values, operator, base)::
             local nodeAffinity = self.affinity(base).nodeAffinity;
